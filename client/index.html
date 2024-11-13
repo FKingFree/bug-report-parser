@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Report Parser</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css">
+    <style>
+        #progressBar {
+            width: 100%;
+            background-color: #f3f3f3;
+        }
+        #progress {
+            width: 0%;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Upload Bug Report</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" class="form-control-file" id="fileInput" name="file" webkitdirectory mozdirectory msdirectory odirectory directory multiple>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+
+        <div id="progressBar">
+            <div id="progress">0%</div>
+        </div>
+
+        <h1 class="mt-5">Search Package</h1>
+        <form id="searchForm">
+            <div class="form-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Enter package name">
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <h1 class="mt-5">Get All Bug Reports</h1>
+        <button id="getAllReports" class="btn btn-primary">Get All Reports</button>
+
+        <div id="result" class="mt-5"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#uploadForm').on('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/upload', true);
+
+                // 添加 onprogress 事件监听器
+                xhr.upload.onprogress = function(event) {
+                    console.log('Progress event:', event);  // 输出整个进度事件对象
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        $('#progress').css('width', percentComplete + '%').text(percentComplete + '%');
+                        console.log('Progress:', percentComplete + '%');  // 打印进度到控制台
+                    } else {
+                        console.log('Progress not computable');  // 打印进度不可计算的信息
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        console.log('File uploaded successfully');
+                        alert('File uploaded successfully');
+                        $('#progress').css('width', '0%').text('0%');
+                    } else {
+                        console.error('Error uploading file:', xhr.responseText);
+                        alert('Error uploading file: ' + xhr.responseText);
+                    }
+                };
+
+                xhr.onerror = function() {
+                    console.error('Network error occurred');
+                    alert('Network error occurred');
+                };
+
+                // 发送请求
+                console.log('Sending request with formData:', formData.getAll('file'));
+                xhr.send(formData);
+            });
+
+            $('#searchForm').on('submit', function(e) {
+                e.preventDefault();
+                const packageName = $('#searchInput').val();
+                $.get('/api/search?packageName=' + packageName, function(data) {
+                    $('#result').html('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+                }).fail(function() {
+                    alert('Error searching package');
+                });
+            });
+
+            $('#getAllReports').on('click', function(e) {
+                e.preventDefault();
+                $.get('/api/reports', function(data) {
+                    $('#result').html('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+                }).fail(function() {
+                    alert('Error retrieving bug reports');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
